@@ -435,7 +435,6 @@
     ```
     Se ejecuta la imagen añadiendo los comandos apache2ctl -D FOREGROUND
     ```sh
-    docker ps -a
     docker run -p 8090:80 imagencdp22 apache2ctl -D FOREGROUND
     ```
     ![Ejecucion](d7.PNG)
