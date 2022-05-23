@@ -45,6 +45,14 @@
         <li>Richart Smith Escobedo Quispe  - r.escobedo@ulasalle.edu.pe</li>
     </ul>
 </td>
+    </ul>
+</td>
+</<tr>
+<tr><td colspan="2">ALUMNOS:
+<ul>
+<li>Ranilla Coaguila, Victor Andre - vranillac@ulasalle.edu.pe</li>
+</ul>
+</td>
 </<tr>
 </tdbody>
 </table>
@@ -402,19 +410,127 @@
     ```sh
     docker run -p 8088:80 rcd22image
     ```
+    
+    Se realizan los mismos pasos realizados en el ejercicio resuelto por el docente.
+    
+            ```sh
+        root@c1f4c261a4ef:/# apt-get update
+        root@c1f4c261a4ef:/# apt-get install apache2
+        root@c1f4c261a4ef:/# /etc/init.d/apache2 start
+        root@c1f4c261a4ef:/# apt-get install ufw
+        root@c1f4c261a4ef:/# ufw allow 'Apache'
+        root@c1f4c261a4ef:/# apt-get install systemctl
+        root@c1f4c261a4ef:/# systemctl enable apache2
+        root@c1f4c261a4ef:/# echo "Bienvenido a mi contenedor Docker para CDP22" > /var/www/html/index.html
+        root@c1f4c261a4ef:/# echo "Atentamente, Victor Ranilla" >> /var/www/html/index.html
+        root@c1f4c261a4ef:/# cat /var/www/html/index.html
+        ```  
+    Se crea una imagen  a partir de un contenedor:
+    ```sh
+    docker ps -a
+    CONTAINER ID   IMAGE     COMMAND              CREATED         STATUS                      PORTS     NAMES
+    c1f4c261a4ef   ubuntu    "bash"               6 minutes ago   Up 6 minutes                          cdp22
+    
+    docker commit c1f4c261a4ef imagencdp22
+    ```
+    Se ejecuta la imagen añadiendo los comandos apache2ctl -D FOREGROUND
+    ```sh
+    docker ps -a
+    docker run -p 8090:80 imagencdp22 apache2ctl -D FOREGROUND
+    ```
+    ![Ejecucion](d7.PNG)
+    
 -   2. Crear dos contenedores que puedan comunicarse: ping.
 
+    Docker por defecto al momento de  crear los contenedores los asigna a una misma red. Se puede crear una nueva red con el siguiente comando
+     ```sh
+    docker network create [NombreRed]
+    ```
+    ![Creacion de red](d1.PNG)
+    
+    Al momento de crear los contenedores de ubuntu se especifíca la red que van a utilizar
+    ```sh
+    docker run -it —name [NombreContenedor] –network [NombreRed] ubuntu
+    ```
+    ![Creacion de contenedor 1](d2.PNG)
+    
+    [Creacion de contenedor 2](d3.PNG)
+    
+    En cada contenedor se ejecutan los siguientes comandos.
+    ```sh
+    root@fa00ea80bc74:/# apt-get update
+    root@fa00ea80bc74:/# apt-get install net-tools
+    root@fa00ea80bc74:/# apt-get install iputils-ping
+    root@fa00ea80bc74:/# ifconfig
+    ```
+    
+    Con ifconfig se observa la dirección ip de cada contenedor.
+    ![ip 1](d4.PNG)
+    
+    ![ip 2](d5.PNG)
+    
+    Con la información obtenida, se puede hacer ping desde un contenedor a otro.
+    ```sh
+    root@fa00ea80bc74:/# ping 172.20.0.3
+    ```
+    ![ping](d6.PNG)
+    
 -   3. Investigar acerca de la ejecución de programas con interfaz gráfica dentro de contenedores Docker.
+
+
+    Usualmente Docker se usa para encapsular software del lado del servidor en paquetes reproducibles, estos son los contenedores. Se asegura un cierto grado de aislamiento entre contenedores. Además, los contenedores se pueden utilizar como bloques de construcción para sistemas que constan de varios servidores de software. 
+
+    Sin embargo, es posible ejecutar aplicaciones con intefaz gráfica dentro de contenedores Docker para usarlas como componentes dentro de sistemas más grandes. Por ejemplo, si ejecutamos Firefox dentro de Docker, podemos tener una separación explícita del estado del navegador entre contenedores. Esto es beneficioso para cosas como la administración de redes sociales.
+
 
 #
 
 ## CUESTIONARIO
 
 - ¿Qué son los "cgroups" del kernel de Linux? y ¿Qué diferencia más interesante encontró entre las versiones 1 y 2?
+
+   Los cgroups, son una característica del kernel de Linux que permite que los procesos se organizarán en grupos jerárquicos cuyo uso de varios tipos de recursos pueden entonces ser limitados y monitoreados. 
+   La versión 1 permitía una cantidad arbitraria de jerarquías y cada jerarquía podía albergar cualquier cantidad de controladores. Si bien esto parecía proporcionar un alto nivel de flexibilidad, no era útil en la práctica. También, la versión 1 permitía que los subprocesos de un proceso pertenecieran a diferentes cgroups, esto no tenía sentido para algunos controladores y esos controladores terminaron implementando diferentes formas de ignorar tales situaciones.
+   
+   La versión 1 permitía que los subprocesos estuvieran en cualquier cgroup, lo que creaba un problema  en el que los subprocesos que pertenecían a un cgroup principal y sus cgroups secundarios competían por los recursos. Esto fue desagradable ya que competían dos tipos diferentes de entidades y no había una manera obvia de resolverlo. 
+   
 - ¿Qué son los "namespaces" del kernel de Linux? y ¿Cuáles son los tipos de "namespaces"?
+
+  Los namespaces son una característica del kernel de Linux que divide los recursos del kernel de forma que un conjunto de procesos ve un conjunto de recursos mientras que otro conjunto de procesos ve otro conjunto diferente de recursos. Los recursos pueden existir en varios espacios. Desde la versión 5.6 del kernel hay 8 tipos de namespace. 
+  
+   Mount (mnt): Los namespaces de mount controlan los puntos de montaje. El indicador de clonación utilizado para crear un nuevo namespace de este tipo es CLONE_NEWNS, abreviatura de "NEW NameSpace".
+
+   Process ID (pid): Proporciona procesos con un conjunto independiente de ID de proceso de otros namespaces. Están anidados, lo que significa que cuando se crea un nuevo proceso tendrá un PID para cada namespace desde su namespace actual hasta el namespace PID inicial. Al primer proceso creado en un namespace PID se le asigna el número de ID de proceso 1 y recibe la mayor parte del mismo tratamiento especial que el proceso de inicio normal.
+
+   Network  (net); Un namespace de red contiene solo una interfaz de bucle invertido. Cada interfaz de red (física o virtual) está presente en exactamente 1 namespace y se puede mover entre namespace. Cada espacio de nombres tendrá un conjunto privado de direcciones IP , su propia tabla de enrutamiento, listado de sockets, tabla de seguimiento de conexiones, firewall y otros recursos relacionados con la red.
+
+   Interprocess Communication (ipc): Los namespaces de IPC aíslan los procesos de la comunicación entre procesos al estilo SysV. 
+
+   UTS: Los namespace UTS permiten que un solo sistema parezca tener diferentes nombres de host y dominio para diferentes procesos. 
+
+   User ID (user): Los namespace de usuario son una función que proporciona aislamiento de privilegios y segregación de identificación de usuarios en varios conjuntos de procesos. Es posible construir un contenedor con aparentes derechos administrativos sin otorgar realmente privilegios elevados a los procesos de usuario. Los espacios de nombres de usuario están anidados y cada nuevo espacio de nombres de usuario se considera un elemento secundario del espacio de nombres de usuario que lo creó.
+
+   Control group (cgroup): El tipo de namespace cgroup oculta la identidad del grupo de control del cual el proceso es miembro. Un proceso en un espacio de nombres de este tipo, al verificar de qué grupo de control forma parte cualquier proceso, vería una ruta que en realidad es relativa al grupo de control establecido en el momento de la creación, ocultando su verdadera posición e identidad del grupo de control. 
+
+   Time: El namespace de tiempo permite que los procesos vean diferentes tiempos del sistema de manera similar al espacio de nombres UTS. Se propuso en 2018 y aterrizó en Linux 5.6, que se lanzó en marzo de 2020.
+  
 - ¿Qué diferencia puede resaltar entre LXC y libcontainer?
+
+  Linux Containers (LXC) se usó antes de docker 0.9 es un controlador de ejecución de docker y ofreció una interfaz de espacio de usuario para las funciones de contención del kernel de Linux. Es muy específico de Linux. El 13 de marzo de 2014, con el lanzamiento de la versión 0.9 , Docker eliminó LXC como entorno de ejecución predeterminado y lo reemplazó con su propia biblioteca libcontainer. 
+  
+  Libcontainer es una abstracción, para admitir una gama más amplia de tecnologías de aislamiento, eso significa que Docker se está abstrayendo de su implementación original, permitiendo que otros proveedores (como CoreOS) implementen su propia versión de contenedores .
+
 - Investigue acerca del malware Doki y explique brevemente.
+
+  Doki es un malware que utiliza el servicio DynDNS y un algoritmo de generación de dominio único (DGA) basado en la cadena de bloques de criptomonedas Dogecoin para encontrar el dominio de su C2 en tiempo real.
+  
+  El malware también aprovecha los sistemas comprometidos para escanear aún más la red en busca de puertos asociados con Redis, Docker, SSH y HTTP. Los atacantes logran comprometer las máquinas host al vincular los contenedores recién creados con el directorio raíz del servidor, lo que les permite acceder o modificar cualquier archivo en el sistema.
+
+  
 - ¿Hasta que punto la empresa RedHat se ha comprometido con el proyecto Docker?
+
+  Red Hat, Inc. es una empresa estadounidense que provee software de código abierto principalmente a empresas. Red Hat es conocida por su sistema operativo empresarial Red Hat Enterprise Linux y por la adquisición del proveedor de middleware empresarial JBoss. Red Hat crea, mantiene y contribuye a muchos proyectos de software libre. Ha adquirido muchos productos de software propietario y ha liberado el código de estos aplicativos como código abierto. El 28 de octubre de 2018, IBM anunció su intención de adquirir Red Hat por $ 33,4 mil millones, llevándose a cabo finalmente el 9 de julio del 2019.
+  Red Hat se comprometió con el proyecto Docker desde 2013 y el apoyo que Docker recibió por parte de este fue profundo y constante pero en los últimos años este compromiso fue disminuyendo. Desde que Red Hat adquirió CoreOS a principios de 2018 hasta la actualidad, todo el apoyo se fue hacia Podman, el cual es buscaría hacerle competencia a Docker.
 
 #
 
